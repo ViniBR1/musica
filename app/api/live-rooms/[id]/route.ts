@@ -1,6 +1,5 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -32,7 +31,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session || session.user.role !== 'teacher') {
       return Response.json({ error: 'Não autorizado' }, { status: 401 });

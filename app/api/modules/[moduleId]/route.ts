@@ -1,12 +1,10 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
 
 export async function GET(request: Request, { params }: { params: { moduleId: string } }) {
   try {
     const { moduleId } = params;
 
-    // Buscar módulo
     const moduleResult = await query(
       `SELECT * FROM modules WHERE id = $1`,
       [moduleId]
@@ -18,7 +16,6 @@ export async function GET(request: Request, { params }: { params: { moduleId: st
 
     const module = moduleResult[0];
 
-    // Buscar aulas
     const lessons = await query(
       `SELECT id, title, youtube_url, description, is_free_preview, order_number
        FROM lessons 
@@ -27,10 +24,17 @@ export async function GET(request: Request, { params }: { params: { moduleId: st
       [moduleId]
     );
 
+    const instrument = await query(
+      'SELECT name, icon FROM instruments WHERE id = $1',
+      [module.instrument_id]
+    );
+
     const completeModule = {
       ...module,
       lessons: lessons || [],
-      lessons_count: lessons?.length || 0
+      lessons_count: lessons?.length || 0,
+      instrument_name: instrument[0]?.name || null,
+      instrument_icon: instrument[0]?.icon || null
     };
 
     return Response.json(completeModule);
@@ -42,7 +46,7 @@ export async function GET(request: Request, { params }: { params: { moduleId: st
 
 export async function DELETE(request: Request, { params }: { params: { moduleId: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session || session.user.role !== 'teacher') {
       return Response.json({ error: 'Não autorizado' }, { status: 401 });

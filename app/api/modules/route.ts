@@ -1,6 +1,5 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 
 export async function GET(request: Request) {
   try {
@@ -42,7 +41,6 @@ export async function GET(request: Request) {
     const modules = await query(sql, params);
     console.log(`✅ ${modules.length} módulos encontrados`);
 
-    // Buscar aulas separadamente
     const modulesWithLessons = await Promise.all(
       modules.map(async (module: any) => {
         const lessons = await query(
@@ -67,7 +65,7 @@ export async function POST(request: Request) {
   try {
     console.log('📡 Recebendo requisição para criar módulo...');
 
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session || session.user.role !== 'teacher') {
       return Response.json({ error: 'Não autorizado' }, { status: 401 });
@@ -95,7 +93,6 @@ export async function POST(request: Request) {
     const teacher_id = teacherId || session.user.id;
     const modulePrice = parseFloat(price) || 0;
 
-    // Inserir módulo com instrument_id
     const result = await query(
       `INSERT INTO modules (title, description, price, teacher_id, is_free, free_lesson_url, instrument_id, parent_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -106,7 +103,6 @@ export async function POST(request: Request) {
     const newModule = result[0];
     console.log(`✅ Módulo criado com ID: ${newModule.id}`);
 
-    // Inserir aulas
     const insertedLessons = [];
     if (lessonsData && lessonsData.length > 0) {
       console.log(`📹 Adicionando ${lessonsData.length} aulas...`);
@@ -133,7 +129,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Buscar módulo completo
     const moduleLessons = await query(
       `SELECT id, title, youtube_url, description, is_free_preview, order_number
        FROM lessons 

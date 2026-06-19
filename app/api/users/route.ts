@@ -1,17 +1,14 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 
 export async function GET() {
   try {
     console.log('📡 GET /api/users - Buscando usuários...');
     
-    const session = await getServerSession(authOptions);
-    
-    console.log('🔍 Sessão completa (users):', JSON.stringify(session, null, 2));
-    console.log('🔍 Session user (users):', session?.user);
-    console.log('🔍 Role (users):', session?.user?.role);
-    console.log('🔍 ID (users):', session?.user?.id);
+    const session = await getServerSession();
+    console.log('👤 Sessão completa:', JSON.stringify(session, null, 2));
+    console.log('👤 Session user:', session?.user);
+    console.log('👤 Role:', session?.user?.role);
 
     if (!session) {
       console.log('❌ Não autorizado - Sessão não encontrada');
@@ -19,7 +16,7 @@ export async function GET() {
     }
 
     if (!session.user) {
-      console.log('❌ Não autorizado - Usuário não encontrado');
+      console.log('❌ Não autorizado - Usuário não encontrado na sessão');
       return Response.json({ error: 'Não autorizado - Usuário não encontrado' }, { status: 401 });
     }
 

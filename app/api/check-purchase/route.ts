@@ -1,6 +1,5 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 
 export async function GET(request: Request) {
   try {

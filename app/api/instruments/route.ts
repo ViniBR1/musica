@@ -1,8 +1,6 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 
-// GET - Listar instrumentos
 export async function GET() {
   try {
     const instruments = await query(
@@ -15,10 +13,9 @@ export async function GET() {
   }
 }
 
-// POST - Criar instrumento (apenas admin)
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     
     if (!session || session.user.role !== 'admin') {
       return Response.json({ error: 'Não autorizado' }, { status: 401 });

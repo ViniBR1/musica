@@ -41,16 +41,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ margin: 0, fontFamily: 'Arial, sans-serif', background: '#f0f2f5' }}>
         <Providers>
           {children}
+          
           {/* Botão de instalação PWA - Flutuante */}
           <div style={{ 
             position: 'fixed', 
             bottom: '30px', 
             right: '30px', 
             zIndex: 9999,
-            '@media (max-width: 480px)': {
-              bottom: '15px',
-              right: '15px',
-            }
           }}>
             <InstallButton />
           </div>

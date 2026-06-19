@@ -1,13 +1,11 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const teacherId = searchParams.get('teacherId');
-    const studentId = searchParams.get('studentId');
 
     let sql = `
       SELECT 
@@ -40,7 +38,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session || session.user.role !== 'teacher') {
       return Response.json({ error: 'Não autorizado' }, { status: 401 });
@@ -72,7 +70,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session) {
       return Response.json({ error: 'Não autorizado' }, { status: 401 });

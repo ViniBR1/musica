@@ -1,13 +1,12 @@
 import { query } from '@/lib/neon';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
     console.log('📡 Criando novo professor...');
 
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session) {
       console.log('❌ Sessão não encontrada');
@@ -28,7 +27,6 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Nome, email e senha são obrigatórios' }, { status: 400 });
     }
 
-    // Verificar se email já existe
     const existingUser = await query('SELECT id FROM users WHERE email = $1', [email]);
     if (existingUser.length > 0) {
       return Response.json({ error: 'Este email já está em uso' }, { status: 400 });

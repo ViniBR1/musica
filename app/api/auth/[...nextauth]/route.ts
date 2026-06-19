@@ -5,9 +5,8 @@ import { verifyCredentials } from '@/lib/auth';
 import { query } from '@/lib/neon';
 import bcrypt from 'bcryptjs';
 
-export const authOptions = {
+const handler = NextAuth({
   providers: [
-    // Provider de Credenciais (email/senha)
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -41,30 +40,20 @@ export const authOptions = {
       },
     }),
     
-    // Provider do Google
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       console.log('🔐 SignIn - Usuário:', user.email, 'Conta:', account?.provider);
       
       if (account?.provider === 'google') {
         try {
-          // Verificar se o usuário já existe
           const existingUser = await query('SELECT * FROM users WHERE email = $1', [user.email]);
           
           if (existingUser.length === 0) {
-            // Criar novo usuário se não existir
             console.log('👤 Criando novo usuário do Google:', user.email);
             
             const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
@@ -79,7 +68,6 @@ export const authOptions = {
             user.role = 'student';
             user.name = result[0].name;
           } else {
-            // Usuário já existe
             console.log('✅ Usuário já existe:', user.email);
             user.id = existingUser[0].id;
             user.role = existingUser[0].role || 'student';
@@ -96,8 +84,8 @@ export const authOptions = {
       return true;
     },
     
-    async jwt({ token, user, account }) {
-      console.log('🔐 JWT ANTES:', { id: token.id, role: token.role });
+    async jwt({ token, user }) {
+      console.log('🔐 JWT:', { id: user?.id, role: user?.role });
       
       if (user) {
         token.id = user.id;
@@ -106,16 +94,11 @@ export const authOptions = {
         token.name = user.name;
       }
       
-      console.log('🔐 JWT DEPOIS:', { id: token.id, role: token.role });
       return token;
     },
     
     async session({ session, token }) {
-      console.log('📝 Session ANTES:', { 
-        id: session.user?.id, 
-        role: session.user?.role,
-        sessionUser: session.user 
-      });
+      console.log('📝 Session:', { id: token.id, role: token.role });
       
       if (session.user) {
         session.user.id = token.id as string;
@@ -124,11 +107,6 @@ export const authOptions = {
         session.user.name = token.name as string;
       }
       
-      console.log('📝 Session DEPOIS:', { 
-        id: session.user?.id, 
-        role: session.user?.role,
-        sessionUser: session.user 
-      });
       return session;
     },
   },
@@ -141,7 +119,6 @@ export const authOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
-};
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

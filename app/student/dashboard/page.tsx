@@ -20,6 +20,7 @@ interface Module {
   description: string;
   price: number;
   teacher_id: string;
+  teacher_name?: string; // ADICIONADO
   is_free: boolean;
   free_lesson_url: string | null;
   instrument_id: string | null;
@@ -77,7 +78,6 @@ export default function StudentDashboard() {
       const data = await response.json();
       setInstruments(Array.isArray(data) ? data : []);
       
-      // Selecionar "Baixo" por padrão
       const bass = data.find((i: Instrument) => i.name === 'Baixo');
       if (bass) {
         setSelectedInstrument(bass.id);
@@ -95,7 +95,6 @@ export default function StudentDashboard() {
       console.log('📡 Buscando dados do aluno...');
       console.log('🎵 Instrumento selecionado:', selectedInstrument);
       
-      // Buscar módulos com filtro de instrumento
       const url = selectedInstrument 
         ? `/api/modules?instrumentId=${selectedInstrument}`
         : '/api/modules';
@@ -104,7 +103,6 @@ export default function StudentDashboard() {
       setModules(Array.isArray(modulesData) ? modulesData : []);
       console.log(`📦 ${modulesData.length} módulos disponíveis`);
 
-      // Buscar módulos comprados pelo aluno
       const purchasesRes = await fetch(`/api/purchases?studentId=${session?.user?.id}`);
       const purchasesData = await purchasesRes.json();
       setPurchasedModules(Array.isArray(purchasesData) ? purchasesData : []);
@@ -234,7 +232,7 @@ export default function StudentDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <span style={{ fontSize: '0.9rem' }}>📁</span>
               <span style={{ fontSize: '0.8rem', color: '#8e44ad' }}>
-                {module.sub_modules.length} sub-módulos
+                {module.sub_modules!.length} sub-módulos
               </span>
             </div>
           )}
@@ -289,17 +287,17 @@ export default function StudentDashboard() {
         {hasSubModules && (
           <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
             <p style={{ fontSize: '0.75rem', color: '#8e44ad', marginBottom: '8px' }}>
-              📁 Sub-módulos: {module.sub_modules.length}
+              📁 Sub-módulos: {module.sub_modules!.length}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {module.sub_modules.slice(0, 4).map((sub: any) => (
+              {module.sub_modules!.slice(0, 4).map((sub: any) => (
                 <span key={sub.id} style={{ padding: '3px 10px', background: '#f3e5f5', color: '#6a1b9a', borderRadius: '12px', fontSize: '0.7rem' }}>
                   📁 {sub.title}
                 </span>
               ))}
-              {module.sub_modules.length > 4 && (
+              {module.sub_modules!.length > 4 && (
                 <span style={{ fontSize: '0.7rem', color: '#999' }}>
-                  +{module.sub_modules.length - 4} mais
+                  +{module.sub_modules!.length - 4} mais
                 </span>
               )}
             </div>
@@ -323,10 +321,10 @@ export default function StudentDashboard() {
   const purchased = Array.isArray(purchasedModules) ? purchasedModules : [];
   const available = Array.isArray(modules) ? modules : [];
   const mainModules = available.filter((m: any) => !m.parent_id);
+  const selectedPrice = selectedModule ? parseFloat(String(selectedModule.price)) || 0 : 0;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      {/* Cabeçalho */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h1 style={{ fontSize: '2rem', color: '#1a1a2e', margin: 0 }}>👋 Olá, {session?.user?.name}!</h1>
@@ -337,7 +335,6 @@ export default function StudentDashboard() {
         </button>
       </div>
 
-      {/* Seletor de Instrumentos */}
       <div style={{ 
         display: 'flex', 
         gap: '10px', 
@@ -374,7 +371,6 @@ export default function StudentDashboard() {
         ))}
       </div>
 
-      {/* Ações Rápidas */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
         <button onClick={() => router.push('/student/live')} style={{ padding: '20px', background: 'white', border: '2px solid #8e44ad', borderRadius: '10px', cursor: 'pointer', fontSize: '1rem' }}>
           <div style={{ fontSize: '2rem' }}>🎥</div>
@@ -388,7 +384,6 @@ export default function StudentDashboard() {
         </button>
       </div>
 
-      {/* Meus Cursos */}
       <div style={{ marginBottom: '40px' }}>
         <h2 style={{ color: '#1a1a2e', marginBottom: '15px' }}>📚 Meus Cursos ({purchased.length})</h2>
 
@@ -404,11 +399,8 @@ export default function StudentDashboard() {
         )}
       </div>
 
-      {/* Cursos Disponíveis */}
       <div>
-        <h2 style={{ color: '#1a1a2e', marginBottom: '15px' }}>
-          🎯 Cursos Disponíveis ({mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length})
-        </h2>
+        <h2 style={{ color: '#1a1a2e', marginBottom: '15px' }}>🎯 Cursos Disponíveis ({mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length})</h2>
 
         {mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length === 0 ? (
           <div style={{ background: 'white', padding: '40px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
@@ -424,7 +416,6 @@ export default function StudentDashboard() {
         )}
       </div>
 
-      {/* Modal de Preview */}
       {showPreview && selectedModule && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 1000 }}>
           <div style={{ background: 'white', padding: '30px', borderRadius: '10px', maxWidth: '800px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -457,7 +448,7 @@ export default function StudentDashboard() {
                 }}
                 style={{ flex: 1, padding: '12px', background: '#4a90e2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '1rem' }}
               >
-                🛒 Comprar Curso Completo - R$ {(parseFloat(String(selectedModule.price)) || 0).toFixed(2)}
+                🛒 Comprar Curso Completo - R$ {selectedPrice.toFixed(2)}
               </button>
               <button onClick={closePreview} style={{ padding: '12px 24px', background: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
                 Continuar Explorando

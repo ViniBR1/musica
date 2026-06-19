@@ -108,13 +108,15 @@ export default function TeacherLive() {
     setIsConnecting(true);
 
     try {
-      // 1. Capturar stream
       let stream: MediaStream;
 
       try {
         if (broadcastMode === 'screen') {
           stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { displaySurface: 'monitor', cursor: 'always' },
+            video: {
+              displaySurface: 'monitor',
+              // CORRIGIDO: removendo 'cursor: always'
+            },
             audio: true,
           });
         } else {
@@ -128,7 +130,7 @@ export default function TeacherLive() {
           setErrorMessage('⚠️ Câmera não disponível. Usando compartilhamento de tela.');
           setBroadcastMode('screen');
           stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { displaySurface: 'monitor', cursor: 'always' },
+            video: { displaySurface: 'monitor' },
             audio: true,
           });
         } else {
@@ -139,7 +141,6 @@ export default function TeacherLive() {
       streamRef.current = stream;
       setPeerReady(false);
 
-      // 2. Criar sala no banco
       const response = await fetch('/api/live-rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,7 +153,6 @@ export default function TeacherLive() {
         throw new Error(roomData.error || 'Erro ao criar sala');
       }
 
-      // 3. Conectar PeerJS
       const peer = new Peer(roomData.peer_id, {
         host: '0.peerjs.com',
         port: 443,
