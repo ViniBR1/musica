@@ -15,6 +15,7 @@ export default function InstallButton() {
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [installError, setInstallError] = useState('');
 
   useEffect(() => {
     // Detectar se é dispositivo móvel
@@ -49,9 +50,14 @@ export default function InstallButton() {
 
     window.addEventListener('appinstalled', installedHandler);
 
-    // Para mobile, sempre mostrar o botão (fallback)
+    // Se for mobile e não tiver evento, mostrar instruções
     if (isMobileDevice && !window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstallable(true);
+      // Pequeno delay para garantir que o evento foi capturado
+      setTimeout(() => {
+        if (!deferredPrompt && !isIOS) {
+          setIsInstallable(true);
+        }
+      }, 3000);
     }
 
     return () => {
@@ -61,6 +67,8 @@ export default function InstallButton() {
   }, []);
 
   const handleInstall = async () => {
+    setInstallError('');
+
     if (deferredPrompt) {
       try {
         deferredPrompt.prompt();
@@ -75,11 +83,13 @@ export default function InstallButton() {
         setDeferredPrompt(null);
       } catch (error) {
         console.error('Erro na instalação:', error);
+        setInstallError('Erro ao instalar. Vamos tentar manualmente.');
         showManualInstructions();
       }
     } else if (isIOS) {
       setShowIOSInstructions(true);
     } else {
+      // Fallback: mostrar instruções
       showManualInstructions();
     }
   };
@@ -117,14 +127,14 @@ export default function InstallButton() {
     );
   }
 
-  // Para mobile, sempre mostrar (mesmo se não for instalável)
+  // Se não for instalável e não for mobile, não mostra
   if (!isInstallable && !isMobile) {
     return null;
   }
 
   return (
     <>
-      {/* Botão Flutuante - SEM BOTÃO DE FECHAR */}
+      {/* Botão Flutuante */}
       <button
         onClick={handleInstall}
         style={{
@@ -323,7 +333,7 @@ export default function InstallButton() {
         </div>
       )}
 
-      {/* MODAL Android (Fallback) */}
+      {/* MODAL Android/Desktop (Fallback) */}
       {showAndroidInstructions && (
         <div style={{
           position: 'fixed',
@@ -388,6 +398,11 @@ export default function InstallButton() {
                 <p style={{ margin: '5px 0 0 0', color: '#555' }}>
                   Clique no botão <strong>"Instalar Agora!"</strong> na tela
                 </p>
+                {installError && (
+                  <p style={{ margin: '5px 0 0 0', color: '#c0392b', fontSize: '0.85rem' }}>
+                    ⚠️ {installError}
+                  </p>
+                )}
               </div>
 
               <div style={{
@@ -400,10 +415,13 @@ export default function InstallButton() {
                   Opção 2 (Manual):
                 </p>
                 <p style={{ margin: '5px 0 0 0', color: '#555' }}>
-                  1. Abra o menu do navegador
+                  1. Abra o menu do navegador (três pontinhos)
                 </p>
                 <p style={{ margin: '0', color: '#555' }}>
                   2. Toque em <strong>"Adicionar à tela inicial"</strong>
+                </p>
+                <p style={{ margin: '5px 0 0 0', color: '#555' }}>
+                  3. Toque em <strong>"Adicionar"</strong>
                 </p>
               </div>
             </div>
