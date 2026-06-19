@@ -15,16 +15,23 @@ export default function InstallButton() {
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Detectar se é dispositivo móvel
+    const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isMobileDevice);
+
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(isIOSDevice);
 
+    // Verificar se já está instalado como PWA
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
+    // Evento de instalação (Android/Chrome/Edge)
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -34,6 +41,7 @@ export default function InstallButton() {
 
     window.addEventListener('beforeinstallprompt', handler);
 
+    // Evento de instalação bem-sucedida
     const installedHandler = () => {
       setIsInstalled(true);
       setIsInstallable(false);
@@ -42,10 +50,9 @@ export default function InstallButton() {
 
     window.addEventListener('appinstalled', installedHandler);
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        console.log('✅ Service Worker pronto');
-      });
+    // Para mobile, sempre mostrar o botão (fallback)
+    if (isMobileDevice && !window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstallable(true);
     }
 
     return () => {
@@ -90,6 +97,7 @@ export default function InstallButton() {
     setShowAndroidInstructions(false);
   };
 
+  // Se já estiver instalado, mostra um badge
   if (isInstalled) {
     return (
       <div style={{
@@ -110,7 +118,8 @@ export default function InstallButton() {
     );
   }
 
-  if (!isInstallable && !isIOS) {
+  // Para mobile, sempre mostrar (mesmo se não for instalável)
+  if (!isInstallable && !isMobile) {
     return null;
   }
 
@@ -189,7 +198,7 @@ export default function InstallButton() {
         </button>
       )}
 
-      {/* Modal iOS */}
+      {/* MODAL iOS */}
       {showIOSInstructions && (
         <div style={{
           position: 'fixed',
@@ -341,7 +350,7 @@ export default function InstallButton() {
         </div>
       )}
 
-      {/* Modal Android (Fallback) */}
+      {/* MODAL Android (Fallback) */}
       {showAndroidInstructions && (
         <div style={{
           position: 'fixed',
