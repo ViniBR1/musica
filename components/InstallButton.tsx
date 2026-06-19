@@ -66,27 +66,24 @@ export default function InstallButton() {
   // BANNER INFERIOR (estilo preto moderno)
   if (showBanner && showButton) {
     return (
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: '#1a1a1a',
-        color: 'white',
-        padding: '16px 20px',
-        boxShadow: '0 -4px 30px rgba(0,0,0,0.5)',
-        zIndex: 50,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        borderTop: '1px solid #333',
-        '@media (min-width: 768px)': {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px 24px',
-        }
-      }}>
+      <div 
+        className="pwa-banner"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#1a1a1a',
+          color: 'white',
+          padding: '16px 20px',
+          boxShadow: '0 -4px 30px rgba(0,0,0,0.5)',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          borderTop: '1px solid #333',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             background: 'rgba(255,255,255,0.1)',
@@ -123,6 +120,7 @@ export default function InstallButton() {
               gap: '8px',
               fontSize: '0.9rem',
               transition: 'background 0.3s',
+              flex: 1,
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'white'}

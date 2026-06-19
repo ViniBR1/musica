@@ -189,7 +189,53 @@ body {
   color: #6a1b9a;
 }
 
-/* Responsividade */
+/* Banner PWA - Responsivo */
+.pwa-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  color: white;
+  padding: 16px 20px;
+  box-shadow: 0 -4px 30px rgba(0,0,0,0.5);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid #333;
+}
+
+@media (min-width: 768px) {
+  .pwa-banner {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 16px 24px !important;
+  }
+  
+  .pwa-banner .pwa-banner-content {
+    flex-direction: row !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .pwa-banner {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  .pwa-banner .pwa-banner-actions {
+    width: 100% !important;
+  }
+  
+  .pwa-banner .pwa-banner-actions button {
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+}
+
+/* Responsividade geral */
 @media (max-width: 768px) {
   .card {
     border-radius: 12px;
