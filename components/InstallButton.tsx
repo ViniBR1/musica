@@ -14,7 +14,6 @@ export default function InstallButton() {
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -125,78 +124,52 @@ export default function InstallButton() {
 
   return (
     <>
-      {/* Botão Flutuante */}
-      {isVisible && (
-        <button
-          onClick={handleInstall}
-          style={{
-            padding: isInstallable ? '16px 28px' : '14px 24px',
-            background: isInstallable 
-              ? 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)'
-              : 'linear-gradient(135deg, #4a90e2 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '50px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            boxShadow: isInstallable
-              ? '0 8px 30px rgba(39, 174, 96, 0.5)'
-              : '0 8px 30px rgba(74, 144, 226, 0.5)',
-            transition: 'transform 0.3s, box-shadow 0.3s',
-            animation: 'pulse 2s infinite',
-            position: 'relative',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <span style={{ fontSize: '1.5rem' }}>📲</span>
-          <span>{isInstallable ? 'Instalar Agora!' : 'Instalar App'}</span>
-          {isInstallable && (
-            <span style={{
-              background: 'rgba(255,255,255,0.2)',
-              padding: '2px 12px',
-              borderRadius: '20px',
-              fontSize: '0.65rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}>
-              Disponível
-            </span>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsVisible(false);
-            }}
-            style={{
-              position: 'absolute',
-              top: '-8px',
-              right: '-8px',
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
-              background: 'rgba(0,0,0,0.3)',
-              color: 'white',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.7rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ✕
-          </button>
-        </button>
-      )}
+      {/* Botão Flutuante - SEM BOTÃO DE FECHAR */}
+      <button
+        onClick={handleInstall}
+        style={{
+          padding: isInstallable ? '16px 28px' : '14px 24px',
+          background: isInstallable 
+            ? 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)'
+            : 'linear-gradient(135deg, #4a90e2 0%, #764ba2 100%)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          boxShadow: isInstallable
+            ? '0 8px 30px rgba(39, 174, 96, 0.5)'
+            : '0 8px 30px rgba(74, 144, 226, 0.5)',
+          transition: 'transform 0.3s, box-shadow 0.3s',
+          animation: 'pulse 2s infinite',
+          position: 'relative',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        <span style={{ fontSize: '1.5rem' }}>📲</span>
+        <span>{isInstallable ? 'Instalar Agora!' : 'Instalar App'}</span>
+        {isInstallable && (
+          <span style={{
+            background: 'rgba(255,255,255,0.2)',
+            padding: '2px 12px',
+            borderRadius: '20px',
+            fontSize: '0.65rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+          }}>
+            Disponível
+          </span>
+        )}
+      </button>
 
       {/* MODAL iOS */}
       {showIOSInstructions && (
