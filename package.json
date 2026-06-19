@@ -1,0 +1,35 @@
+{
+  "name": "curso-contrabaixo",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Plataforma de cursos de contrabaixo com TypeScript, PWA e Lives",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "setup-db": "node --loader ts-node/esm scripts/setup-db.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "next": "14.2.0",
+    "next-auth": "^4.24.5",
+    "peerjs": "^1.5.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "simple-peer": "^9.11.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/simple-peer": "^9.11.9",
+    "@types/uuid": "^9.0.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
