@@ -2,460 +2,193 @@
 
 import { useState, useEffect } from 'react';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 export default function InstallButton() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
-  const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [installError, setInstallError] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showButton, setShowButton] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
 
   useEffect(() => {
-    // Detectar se é dispositivo móvel
-    const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    setIsMobile(isMobileDevice);
-
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(isIOSDevice);
-
     // Verificar se já está instalado como PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    if (isInstalled) {
+      setShowButton(false);
       return;
     }
 
-    // Evento de instalação (Android/Chrome/Edge)
-    const handler = (e: Event) => {
+    // Evento de instalação (Chrome/Edge/Android)
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsInstallable(true);
-      console.log('✅ App é instalável!');
+      setDeferredPrompt(e);
+      setShowButton(true);
+      console.log('✅ PWA pronto para instalação!');
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Evento de instalação bem-sucedida
-    const installedHandler = () => {
-      setIsInstalled(true);
-      setIsInstallable(false);
-      alert('🎉 App instalado com sucesso!');
-    };
-
-    window.addEventListener('appinstalled', installedHandler);
-
-    // Se for mobile e não tiver evento, mostrar instruções
-    if (isMobileDevice && !window.matchMedia('(display-mode: standalone)').matches) {
-      // Pequeno delay para garantir que o evento foi capturado
-      setTimeout(() => {
-        if (!deferredPrompt && !isIOS) {
-          setIsInstallable(true);
-        }
-      }, 3000);
+    // Verificar se o banner foi fechado anteriormente
+    const bannerFechado = localStorage.getItem('pwa-banner-fechado');
+    if (bannerFechado === 'true') {
+      setShowBanner(false);
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      window.removeEventListener('appinstalled', installedHandler);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
 
   const handleInstall = async () => {
-    setInstallError('');
-
     if (deferredPrompt) {
-      try {
-        deferredPrompt.prompt();
-        const result = await deferredPrompt.userChoice;
-        if (result.outcome === 'accepted') {
-          setIsInstalled(true);
-          setIsInstallable(false);
-          alert('🎉 App instalado com sucesso!');
-        } else {
-          alert('❌ Instalação cancelada');
-        }
-        setDeferredPrompt(null);
-      } catch (error) {
-        console.error('Erro na instalação:', error);
-        setInstallError('Erro ao instalar. Vamos tentar manualmente.');
-        showManualInstructions();
+      // Chrome/Edge/Android - mostra o prompt nativo
+      deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+      
+      if (result.outcome === 'accepted') {
+        console.log('✅ App instalado!');
+        setShowButton(false);
+        setShowBanner(false);
+        alert('🎉 App instalado com sucesso!');
+      } else {
+        alert('❌ Instalação cancelada');
       }
-    } else if (isIOS) {
-      setShowIOSInstructions(true);
+      setDeferredPrompt(null);
     } else {
-      // Fallback: mostrar instruções
-      showManualInstructions();
+      // Fallback para iOS ou outros navegadores
+      alert('📱 Para instalar: Clique nos 3 pontinhos (⋮) → "Adicionar à tela inicial"');
+      setShowBanner(true);
     }
   };
 
-  const showManualInstructions = () => {
-    setShowAndroidInstructions(true);
+  const fecharBanner = () => {
+    setShowBanner(false);
+    localStorage.setItem('pwa-banner-fechado', 'true');
   };
 
-  const closeIOSInstructions = () => {
-    setShowIOSInstructions(false);
-  };
-
-  const closeAndroidInstructions = () => {
-    setShowAndroidInstructions(false);
-  };
-
-  // Se já estiver instalado, mostra um badge
-  if (isInstalled) {
+  // BANNER INFERIOR (estilo preto moderno)
+  if (showBanner && showButton) {
     return (
       <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: '#1a1a1a',
+        color: 'white',
+        padding: '16px 20px',
+        boxShadow: '0 -4px 30px rgba(0,0,0,0.5)',
+        zIndex: 50,
         display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 16px',
-        background: '#e8f5e9',
-        borderRadius: '50px',
-        fontSize: '0.85rem',
-        color: '#2e7d32',
-        border: '1px solid #a5d6a7',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        flexDirection: 'column',
+        gap: '12px',
+        borderTop: '1px solid #333',
+        '@media (min-width: 768px)': {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 24px',
+        }
       }}>
-        <span>✅</span>
-        App instalado
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '50%',
+            padding: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>📲</span>
+          </div>
+          <div>
+            <p style={{ fontWeight: 'bold', fontSize: '0.95rem', margin: 0 }}>
+              🎸 Curso de Contrabaixo
+            </p>
+            <p style={{ fontSize: '0.8rem', opacity: 0.7, margin: 0 }}>
+              Instale o app na tela inicial do seu celular
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={handleInstall}
+            style={{
+              background: 'white',
+              color: '#1a1a1a',
+              padding: '10px 24px',
+              borderRadius: '10px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.9rem',
+              transition: 'background 0.3s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+          >
+            <span>📲</span>
+            Instalar
+          </button>
+          <button
+            onClick={fecharBanner}
+            style={{
+              background: 'transparent',
+              color: '#888',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px',
+              fontSize: '1.2rem',
+              transition: 'color 0.3s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
+          >
+            ✕
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Se não for instalável e não for mobile, não mostra
-  if (!isInstallable && !isMobile) {
-    return null;
-  }
-
-  return (
-    <>
-      {/* Botão Flutuante */}
+  // BOTÃO FLUTUANTE (quando o banner está fechado)
+  if (showButton && !showBanner) {
+    return (
       <button
         onClick={handleInstall}
         style={{
-          padding: isInstallable ? '16px 28px' : '14px 24px',
-          background: isInstallable 
-            ? 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)'
-            : 'linear-gradient(135deg, #4a90e2 0%, #764ba2 100%)',
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          background: '#1a1a1a',
           color: 'white',
-          border: 'none',
+          padding: '14px 24px',
           borderRadius: '50px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+          border: '1px solid #333',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          fontSize: '1rem',
-          fontWeight: 'bold',
-          boxShadow: isInstallable
-            ? '0 8px 30px rgba(39, 174, 96, 0.5)'
-            : '0 8px 30px rgba(74, 144, 226, 0.5)',
+          gap: '10px',
+          zIndex: 40,
+          fontSize: '0.95rem',
+          fontWeight: 600,
           transition: 'transform 0.3s, box-shadow 0.3s',
-          animation: 'pulse 2s infinite',
-          position: 'relative',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.5)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4)';
         }}
       >
-        <span style={{ fontSize: '1.5rem' }}>📲</span>
-        <span>{isInstallable ? 'Instalar Agora!' : 'Instalar App'}</span>
-        {isInstallable && (
-          <span style={{
-            background: 'rgba(255,255,255,0.2)',
-            padding: '2px 12px',
-            borderRadius: '20px',
-            fontSize: '0.65rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}>
-            Disponível
-          </span>
-        )}
+        <span style={{ fontSize: '1.2rem' }}>📲</span>
+        Instalar App
       </button>
+    );
+  }
 
-      {/* MODAL iOS */}
-      {showIOSInstructions && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          zIndex: 10000,
-          backdropFilter: 'blur(10px)',
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '35px',
-            borderRadius: '20px',
-            maxWidth: '420px',
-            width: '100%',
-            position: 'relative',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-          }}>
-            <button
-              onClick={closeIOSInstructions}
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '18px',
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: '#999',
-              }}
-            >
-              ✕
-            </button>
-
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <span style={{ fontSize: '3rem' }}>📲</span>
-              <h2 style={{ margin: '10px 0 5px 0', color: '#1a1a2e' }}>
-                Instalar no iPhone
-              </h2>
-              <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                Siga os passos abaixo para instalar o app
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '25px' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px',
-                padding: '12px',
-                marginBottom: '10px',
-                background: '#f8f9fa',
-                borderRadius: '10px',
-              }}>
-                <span style={{
-                  background: '#4a90e2',
-                  color: 'white',
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  flexShrink: 0,
-                }}>1</span>
-                <span style={{ color: '#333' }}>
-                  Toque no ícone <strong>⬆️ Compartilhar</strong>
-                </span>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px',
-                padding: '12px',
-                marginBottom: '10px',
-                background: '#f8f9fa',
-                borderRadius: '10px',
-              }}>
-                <span style={{
-                  background: '#4a90e2',
-                  color: 'white',
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  flexShrink: 0,
-                }}>2</span>
-                <span style={{ color: '#333' }}>
-                  Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>
-                </span>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px',
-                padding: '12px',
-                background: '#f8f9fa',
-                borderRadius: '10px',
-              }}>
-                <span style={{
-                  background: '#27ae60',
-                  color: 'white',
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  flexShrink: 0,
-                }}>3</span>
-                <span style={{ color: '#333' }}>
-                  Toque em <strong>"Adicionar"</strong> no canto superior direito
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={closeIOSInstructions}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'linear-gradient(135deg, #4a90e2 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-              }}
-            >
-              Entendi! Vou instalar 👍
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL Android/Desktop (Fallback) */}
-      {showAndroidInstructions && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          zIndex: 10000,
-          backdropFilter: 'blur(10px)',
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '35px',
-            borderRadius: '20px',
-            maxWidth: '420px',
-            width: '100%',
-            position: 'relative',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          }}>
-            <button
-              onClick={closeAndroidInstructions}
-              style={{
-                position: 'absolute',
-                top: '12px',
-                right: '18px',
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: '#999',
-              }}
-            >
-              ✕
-            </button>
-
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <span style={{ fontSize: '3rem' }}>📲</span>
-              <h2 style={{ margin: '10px 0 5px 0', color: '#1a1a2e' }}>
-                Instalar App
-              </h2>
-              <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                O app pode ser instalado de duas formas
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{
-                padding: '15px',
-                marginBottom: '12px',
-                background: '#f8f9fa',
-                borderRadius: '10px',
-                borderLeft: '4px solid #4a90e2',
-              }}>
-                <p style={{ margin: '0', fontWeight: 'bold', color: '#1a1a2e' }}>
-                  Opção 1:
-                </p>
-                <p style={{ margin: '5px 0 0 0', color: '#555' }}>
-                  Clique no botão <strong>"Instalar Agora!"</strong> na tela
-                </p>
-                {installError && (
-                  <p style={{ margin: '5px 0 0 0', color: '#c0392b', fontSize: '0.85rem' }}>
-                    ⚠️ {installError}
-                  </p>
-                )}
-              </div>
-
-              <div style={{
-                padding: '15px',
-                background: '#fff3e0',
-                borderRadius: '10px',
-                borderLeft: '4px solid #f39c12',
-              }}>
-                <p style={{ margin: '0', fontWeight: 'bold', color: '#1a1a2e' }}>
-                  Opção 2 (Manual):
-                </p>
-                <p style={{ margin: '5px 0 0 0', color: '#555' }}>
-                  1. Abra o menu do navegador (três pontinhos)
-                </p>
-                <p style={{ margin: '0', color: '#555' }}>
-                  2. Toque em <strong>"Adicionar à tela inicial"</strong>
-                </p>
-                <p style={{ margin: '5px 0 0 0', color: '#555' }}>
-                  3. Toque em <strong>"Adicionar"</strong>
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={closeAndroidInstructions}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-              }}
-            >
-              Entendi! 👍
-            </button>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.03);
-          }
-        }
-      `}</style>
-    </>
-  );
+  return null;
 }
