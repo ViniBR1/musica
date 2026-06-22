@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Carregar variáveis de ambiente
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
@@ -15,9 +16,11 @@ if (!databaseUrl) {
 }
 
 console.log('✅ Conectando ao Neon...');
+
+// AUMENTAR TIMEOUT para 60 segundos
 const sql = neon(databaseUrl, {
   fetchOptions: {
-    timeout: 30000,
+    timeout: 60000, // 60 segundos
   },
 });
 

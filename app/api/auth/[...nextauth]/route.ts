@@ -14,8 +14,6 @@ const handler = NextAuth({
         password: { label: 'Senha', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('🔑 Tentando login com:', credentials?.email);
-        
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -24,7 +22,11 @@ const handler = NextAuth({
           const user = await verifyCredentials(credentials.email, credentials.password);
           
           if (user) {
-            console.log('✅ Login bem-sucedido:', user.email, 'Role:', user.role);
+            console.log('✅ Login bem-sucedido:', {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+            });
             return {
               id: user.id,
               email: user.email,
@@ -47,15 +49,11 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account }) {
-      console.log('🔐 SignIn - Usuário:', user.email, 'Conta:', account?.provider);
-      
       if (account?.provider === 'google') {
         try {
           const existingUser = await query('SELECT * FROM users WHERE email = $1', [user.email]);
           
           if (existingUser.length === 0) {
-            console.log('👤 Criando novo usuário do Google:', user.email);
-            
             const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
             const result = await query(
               `INSERT INTO users (email, password, name, role, created_at)
@@ -68,7 +66,6 @@ const handler = NextAuth({
             user.role = 'student';
             user.name = result[0].name;
           } else {
-            console.log('✅ Usuário já existe:', user.email);
             user.id = existingUser[0].id;
             user.role = existingUser[0].role || 'student';
             user.name = existingUser[0].name;
@@ -85,7 +82,7 @@ const handler = NextAuth({
     },
     
     async jwt({ token, user }) {
-      console.log('🔐 JWT:', { id: user?.id, role: user?.role });
+      console.log('🔐 JWT antes:', { id: token.id, role: token.role });
       
       if (user) {
         token.id = user.id;
@@ -94,11 +91,15 @@ const handler = NextAuth({
         token.name = user.name;
       }
       
+      console.log('🔐 JWT depois:', { id: token.id, role: token.role });
       return token;
     },
     
     async session({ session, token }) {
-      console.log('📝 Session:', { id: token.id, role: token.role });
+      console.log('📝 Session antes:', { 
+        id: session.user?.id, 
+        role: session.user?.role 
+      });
       
       if (session.user) {
         session.user.id = token.id as string;
@@ -106,6 +107,11 @@ const handler = NextAuth({
         session.user.email = token.email as string;
         session.user.name = token.name as string;
       }
+      
+      console.log('📝 Session depois:', { 
+        id: session.user?.id, 
+        role: session.user?.role 
+      });
       
       return session;
     },
@@ -115,10 +121,10 @@ const handler = NextAuth({
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 7 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
+  debug: true, // Ativar debug para ver o que está acontecendo
 });
 
 export { handler as GET, handler as POST };

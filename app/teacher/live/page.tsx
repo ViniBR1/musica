@@ -14,6 +14,10 @@ interface LiveRoom {
   room_code: string;
   peer_id: string;
   status: string;
+  is_aluno: boolean;
+  created_by: string;
+  recording_url: string | null;
+  recorded_at: string | null;
   teacher_name?: string;
   teacher_email?: string;
   module_title?: string;
@@ -40,6 +44,7 @@ export default function TeacherLive() {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showRecordingModal, setShowRecordingModal] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [activeRoom, setActiveRoom] = useState<LiveRoom | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -47,6 +52,7 @@ export default function TeacherLive() {
   const [broadcastMode, setBroadcastMode] = useState('screen');
   const [viewers, setViewers] = useState(0);
   const [peerReady, setPeerReady] = useState(false);
+  const [recordingUrl, setRecordingUrl] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const peerRef = useRef<any>(null);
@@ -113,10 +119,7 @@ export default function TeacherLive() {
       try {
         if (broadcastMode === 'screen') {
           stream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-              displaySurface: 'monitor',
-              // CORRIGIDO: removendo 'cursor: always'
-            },
+            video: { displaySurface: 'monitor' },
             audio: true,
           });
         } else {
@@ -141,6 +144,7 @@ export default function TeacherLive() {
       streamRef.current = stream;
       setPeerReady(false);
 
+      // Criar sala
       const response = await fetch('/api/live-rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,6 +157,7 @@ export default function TeacherLive() {
         throw new Error(roomData.error || 'Erro ao criar sala');
       }
 
+      // Conectar PeerJS
       const peer = new Peer(roomData.peer_id, {
         host: '0.peerjs.com',
         port: 443,
@@ -246,11 +251,39 @@ export default function TeacherLive() {
         videoRef.current.srcObject = null;
       }
 
+      // Abrir modal para salvar a gravação
+      setShowRecordingModal(true);
       fetchData();
-      alert('✅ Transmissão encerrada!');
     } catch (error) {
       console.error('❌ Erro:', error);
       alert('❌ Erro ao encerrar');
+    }
+  };
+
+  const saveRecording = async () => {
+    if (!recordingUrl) {
+      alert('⚠️ Cole a URL da gravação');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/live-rooms?roomId=${activeRoom?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recording_url: recordingUrl }),
+      });
+
+      if (response.ok) {
+        alert('✅ Gravação salva com sucesso!');
+        setShowRecordingModal(false);
+        setRecordingUrl('');
+        fetchData();
+      } else {
+        alert('❌ Erro ao salvar gravação');
+      }
+    } catch (error) {
+      console.error('❌ Erro:', error);
+      alert('❌ Erro ao salvar gravação');
     }
   };
 
@@ -415,9 +448,120 @@ export default function TeacherLive() {
                 ❌ Cancelar
               </button>
             </div>
+
+            <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
+              <strong>💡 Dica:</strong> Se sua câmera não funcionar, use "Compartilhar Tela"
+            </div>
           </div>
         </div>
       )}
+
+      {/* Modal para salvar a gravação */}
+      {showRecordingModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 1000 }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', maxWidth: '500px', width: '100%' }}>
+            <h2 style={{ marginTop: 0 }}>💾 Salvar Gravação</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Cole o link da gravação da sua aula para que os alunos possam assistir depois.
+            </p>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                URL da Gravação (YouTube, Vimeo, etc.)
+              </label>
+              <input
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={recordingUrl}
+                onChange={(e) => setRecordingUrl(e.target.value)}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+              />
+              <p style={{ fontSize: '0.8rem', color: '#999', marginTop: '5px' }}>
+                Cole o link do vídeo gravado para que os alunos possam acessar depois
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={saveRecording}
+                style={{ flex: 1, padding: '12px', background: '#27ae60', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                💾 Salvar
+              </button>
+              <button
+                onClick={() => {
+                  setShowRecordingModal(false);
+                  setRecordingUrl('');
+                }}
+                style={{ padding: '12px 24px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+              >
+                ❌ Pular
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: '#999', marginTop: '10px', textAlign: 'center' }}>
+              Você pode salvar a gravação depois também
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: '40px' }}>
+        <h2>📋 Histórico</h2>
+        {rooms.length === 0 ? (
+          <div style={{ background: 'white', padding: '40px', borderRadius: '10px', textAlign: 'center' }}>
+            <p style={{ color: '#666' }}>Nenhuma transmissão ainda</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '15px' }}>
+            {rooms.map((room) => (
+              <div key={room.id} style={{
+                background: 'white',
+                padding: '15px',
+                borderRadius: '10px',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>{room.title}</h3>
+                  <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9rem' }}>
+                    Código: {room.room_code}
+                  </p>
+                  <p style={{ margin: 0, color: '#999', fontSize: '0.8rem' }}>
+                    {room.status === 'active' ? '🟢 Ao Vivo' :
+                     room.status === 'recorded' ? '🎬 Gravada' :
+                     '✅ Finalizada'} - {new Date(room.created_at).toLocaleString()}
+                  </p>
+                  {room.recording_url && (
+                    <a
+                      href={room.recording_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#4a90e2', fontSize: '0.85rem', textDecoration: 'none' }}
+                    >
+                      ▶️ Ver gravação
+                    </a>
+                  )}
+                </div>
+                {room.status === 'active' && (
+                  <span style={{ padding: '5px 15px', background: '#27ae60', color: 'white', borderRadius: '20px', fontSize: '0.9rem' }}>
+                    🟢 AO VIVO
+                  </span>
+                )}
+                {room.status === 'recorded' && (
+                  <span style={{ padding: '5px 15px', background: '#8e44ad', color: 'white', borderRadius: '20px', fontSize: '0.9rem' }}>
+                    🎬 Gravada
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -13,6 +13,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^0.9.0",
     "bcryptjs": "^2.4.3",
+    "canvas": "^3.2.3",
     "dotenv": "^16.4.7",
     "next": "14.2.0",
     "next-auth": "^4.24.5",

@@ -12,6 +12,8 @@ interface Lesson {
   description: string;
   is_free_preview: boolean;
   order_number: number;
+  module_id?: string;
+  module_title?: string;
 }
 
 interface Module {
@@ -20,7 +22,7 @@ interface Module {
   description: string;
   price: number;
   teacher_id: string;
-  teacher_name?: string; // ADICIONADO
+  teacher_name?: string;
   is_free: boolean;
   free_lesson_url: string | null;
   instrument_id: string | null;
@@ -29,6 +31,7 @@ interface Module {
   lessons: Lesson[];
   lessons_count: number;
   sub_modules?: Module[];
+  parent_id?: string | null;
   created_at: string;
 }
 
@@ -140,9 +143,23 @@ export default function StudentDashboard() {
     router.push('/login');
   };
 
+  // Função para calcular total de aulas (incluindo sub-módulos)
+  const getTotalLessons = (module: Module) => {
+    const mainLessons = module.lessons?.length || 0;
+    const subLessons = module.sub_modules?.reduce((acc, sub) => acc + (sub.lessons?.length || 0), 0) || 0;
+    return mainLessons + subLessons;
+  };
+
+  // Função para calcular total de módulos (incluindo sub-módulos)
+  const getTotalModules = (module: Module) => {
+    return 1 + (module.sub_modules?.length || 0);
+  };
+
   const renderModuleCard = (module: Module, isPurchased: boolean) => {
-    const hasSubModules = module.sub_modules && module.sub_modules.length > 0;
-    const totalLessons = module.lessons?.length || 0;
+    const subModules = module.sub_modules || [];
+    const hasSubModules = subModules.length > 0;
+    const totalLessons = getTotalLessons(module);
+    const totalModules = getTotalModules(module);
     const freeLessons = module.lessons?.filter((l: any) => l.is_free_preview).length || 0;
     const price = parseFloat(String(module.price)) || 0;
 
@@ -159,6 +176,7 @@ export default function StudentDashboard() {
           cursor: 'pointer',
           position: 'relative',
           overflow: 'hidden',
+          width: '100%',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-5px)';
@@ -205,57 +223,77 @@ export default function StudentDashboard() {
           {module.description}
         </p>
 
+        {/* ESTATÍSTICAS DO CURSO */}
         <div style={{ 
-          display: 'flex', 
-          gap: '15px', 
-          marginTop: '12px', 
-          flexWrap: 'wrap',
-          padding: '10px 0',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+          gap: '10px',
+          marginTop: '12px',
+          padding: '12px 0',
           borderTop: '1px solid #f0f0f0',
-          borderBottom: '1px solid #f0f0f0'
+          borderBottom: '1px solid #f0f0f0',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '0.9rem' }}>📹</span>
-            <span style={{ fontSize: '0.8rem', color: '#555' }}>
-              {totalLessons} {totalLessons === 1 ? 'aula' : 'aulas'}
-            </span>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4a90e2' }}>
+              {totalModules}
+            </div>
+            <div style={{ fontSize: '0.65rem', color: '#888' }}>
+              {totalModules === 1 ? 'Módulo' : 'Módulos'}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#27ae60' }}>
+              {totalLessons}
+            </div>
+            <div style={{ fontSize: '0.65rem', color: '#888' }}>
+              {totalLessons === 1 ? 'Aula' : 'Aulas'}
+            </div>
           </div>
           {freeLessons > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ fontSize: '0.9rem' }}>🔓</span>
-              <span style={{ fontSize: '0.8rem', color: '#27ae60' }}>
-                {freeLessons} grátis
-              </span>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#f39c12' }}>
+                {freeLessons}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: '#888' }}>
+                Grátis
+              </div>
             </div>
           )}
           {hasSubModules && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ fontSize: '0.9rem' }}>📁</span>
-              <span style={{ fontSize: '0.8rem', color: '#8e44ad' }}>
-                {module.sub_modules!.length} sub-módulos
-              </span>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#8e44ad' }}>
+                {subModules.length}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: '#888' }}>
+                Sub-módulos
+              </div>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '0.9rem' }}>👨‍🏫</span>
-            <span style={{ fontSize: '0.8rem', color: '#555' }}>
-              {module.teacher_name || 'Professor'}
-            </span>
-          </div>
         </div>
 
         <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4a90e2', marginTop: '12px', marginBottom: '10px' }}>
           {module.is_free ? '🎁 Gratuito' : `R$ ${price.toFixed(2)}`}
         </p>
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '5px', flexWrap: 'wrap' }}>
           {module.free_lesson_url && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleWatchPreview(module);
               }}
-              style={{ flex: 1, padding: '10px 12px', background: '#f39c12', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}
+              style={{
+                flex: 1,
+                minWidth: '120px',
+                padding: '10px 12px',
+                background: '#f39c12',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+              }}
             >
               🎬 Preview
             </button>
@@ -267,7 +305,18 @@ export default function StudentDashboard() {
                 e.stopPropagation();
                 router.push(`/student/modules/${module.id}`);
               }}
-              style={{ flex: module.free_lesson_url ? 1 : 2, padding: '10px 12px', background: '#27ae60', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}
+              style={{
+                flex: 1,
+                minWidth: '120px',
+                padding: '10px 12px',
+                background: '#27ae60',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+              }}
             >
               ▶️ Assistir Aulas
             </button>
@@ -277,29 +326,83 @@ export default function StudentDashboard() {
                 e.stopPropagation();
                 handlePurchase(module.id);
               }}
-              style={{ flex: module.free_lesson_url ? 1 : 2, padding: '10px 12px', background: '#4a90e2', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}
+              style={{
+                flex: 1,
+                minWidth: '120px',
+                padding: '10px 12px',
+                background: '#4a90e2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+              }}
             >
               🛒 Comprar
             </button>
           )}
         </div>
 
+        {/* SUB-MÓDULOS - Renderização */}
         {hasSubModules && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
-            <p style={{ fontSize: '0.75rem', color: '#8e44ad', marginBottom: '8px' }}>
-              📁 Sub-módulos: {module.sub_modules!.length}
+          <div style={{ 
+            marginTop: '15px', 
+            paddingTop: '15px', 
+            borderTop: '2px solid #f0f0f0',
+            backgroundColor: '#faf5ff',
+            borderRadius: '8px',
+            padding: '12px',
+          }}>
+            <p style={{ 
+              fontSize: '0.8rem', 
+              fontWeight: 'bold', 
+              color: '#6a1b9a', 
+              marginBottom: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}>
+              📁 Sub-módulos ({subModules.length}):
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {module.sub_modules!.slice(0, 4).map((sub: any) => (
-                <span key={sub.id} style={{ padding: '3px 10px', background: '#f3e5f5', color: '#6a1b9a', borderRadius: '12px', fontSize: '0.7rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {subModules.map((sub: any) => (
+                <button
+                  key={sub.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/student/modules/${sub.id}`);
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    background: '#e8d5f5',
+                    color: '#4a148c',
+                    border: '1px solid #8e44ad',
+                    borderRadius: '20px',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#d1c4e9';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#e8d5f5';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
                   📁 {sub.title}
-                </span>
+                  {sub.lessons && sub.lessons.length > 0 && (
+                    <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>
+                      ({sub.lessons.length} aulas)
+                    </span>
+                  )}
+                </button>
               ))}
-              {module.sub_modules!.length > 4 && (
-                <span style={{ fontSize: '0.7rem', color: '#999' }}>
-                  +{module.sub_modules!.length - 4} mais
-                </span>
-              )}
             </div>
           </div>
         )}
@@ -309,7 +412,13 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        padding: '20px',
+      }}>
         <div style={{ textAlign: 'center' }}>
           <h2>⏳ Carregando...</h2>
           <p style={{ color: '#666' }}>Carregando seus cursos</p>
@@ -323,46 +432,80 @@ export default function StudentDashboard() {
   const mainModules = available.filter((m: any) => !m.parent_id);
   const selectedPrice = selectedModule ? parseFloat(String(selectedModule.price)) || 0 : 0;
 
+  // Calcular totais dos cursos disponíveis
+  const totalAvailableModules = mainModules.reduce((acc, m) => acc + getTotalModules(m), 0);
+  const totalAvailableLessons = mainModules.reduce((acc, m) => acc + getTotalLessons(m), 0);
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+    <div style={{
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: '20px 16px',
+      width: '100%',
+      minHeight: '100vh',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '15px',
+      }}>
         <div>
-          <h1 style={{ fontSize: '2rem', color: '#1a1a2e', margin: 0 }}>👋 Olá, {session?.user?.name}!</h1>
-          <p style={{ color: '#666', marginTop: '5px' }}>Bem-vindo à sua área de aluno</p>
+          <h1 style={{ fontSize: '1.8rem', color: '#1a1a2e', margin: 0 }}>
+            👋 Olá, {session?.user?.name}!
+          </h1>
+          <p style={{ color: '#666', marginTop: '5px', fontSize: '0.9rem' }}>
+            Bem-vindo à sua área de aluno
+          </p>
         </div>
-        <button onClick={handleLogout} style={{ padding: '10px 20px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '10px 20px',
+            background: '#e74c3c',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+          }}
+        >
           🚪 Sair
         </button>
       </div>
 
-      <div style={{ 
-        display: 'flex', 
-        gap: '10px', 
+      <div style={{
+        display: 'flex',
+        gap: '10px',
         marginBottom: '20px',
         flexWrap: 'wrap',
         background: 'white',
         padding: '15px',
         borderRadius: '10px',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {instruments.map((inst) => (
           <button
             key={inst.id}
-            onClick={() => {
-              setSelectedInstrument(inst.id);
-            }}
+            onClick={() => setSelectedInstrument(inst.id)}
             style={{
-              padding: '10px 20px',
+              padding: '8px 16px',
               background: selectedInstrument === inst.id ? '#4a90e2' : '#f5f5f5',
               color: selectedInstrument === inst.id ? 'white' : '#333',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '1rem',
+              fontSize: '0.9rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               transition: 'all 0.3s',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
             <span>{inst.icon}</span>
@@ -371,44 +514,139 @@ export default function StudentDashboard() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-        <button onClick={() => router.push('/student/live')} style={{ padding: '20px', background: 'white', border: '2px solid #8e44ad', borderRadius: '10px', cursor: 'pointer', fontSize: '1rem' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: '15px',
+        marginBottom: '30px',
+      }}>
+        <button
+          onClick={() => router.push('/student/live')}
+          style={{
+            padding: '20px',
+            background: 'white',
+            border: '2px solid #8e44ad',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            textAlign: 'center',
+          }}
+        >
           <div style={{ fontSize: '2rem' }}>🎥</div>
           <div style={{ fontWeight: 'bold', marginTop: '10px' }}>Aulas ao Vivo</div>
-          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>Participe ao vivo</div>
+          <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '5px' }}>
+            Participe ao vivo
+          </div>
         </button>
-        <button onClick={() => alert('🔜 Em breve: Chat')} style={{ padding: '20px', background: 'white', border: '2px solid #f39c12', borderRadius: '10px', cursor: 'pointer', fontSize: '1rem' }}>
+
+        <button
+          onClick={() => alert('🔜 Em breve: Chat')}
+          style={{
+            padding: '20px',
+            background: 'white',
+            border: '2px solid #f39c12',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            textAlign: 'center',
+          }}
+        >
           <div style={{ fontSize: '2rem' }}>💬</div>
           <div style={{ fontWeight: 'bold', marginTop: '10px' }}>Chat</div>
-          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>Com seu professor</div>
+          <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '5px' }}>
+            Com seu professor
+          </div>
         </button>
       </div>
 
+      {/* MEUS CURSOS */}
       <div style={{ marginBottom: '40px' }}>
-        <h2 style={{ color: '#1a1a2e', marginBottom: '15px' }}>📚 Meus Cursos ({purchased.length})</h2>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '15px',
+          flexWrap: 'wrap',
+          gap: '10px',
+        }}>
+          <h2 style={{ color: '#1a1a2e', margin: 0, fontSize: '1.3rem' }}>
+            📚 Meus Cursos ({purchased.length})
+          </h2>
+          {purchased.length > 0 && (
+            <div style={{ fontSize: '0.8rem', color: '#888' }}>
+              {purchased.reduce((acc, m) => acc + getTotalModules(m), 0)} módulos •{' '}
+              {purchased.reduce((acc, m) => acc + getTotalLessons(m), 0)} aulas
+            </div>
+          )}
+        </div>
 
         {purchased.length === 0 ? (
-          <div style={{ background: 'white', padding: '40px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-            <p style={{ fontSize: '1.1rem', color: '#666' }}>📚 Você ainda não comprou nenhum curso</p>
-            <p style={{ color: '#999', marginTop: '10px' }}>Explore os cursos disponíveis abaixo</p>
+          <div style={{
+            background: 'white',
+            padding: '40px 20px',
+            borderRadius: '10px',
+            textAlign: 'center',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+          }}>
+            <p style={{ fontSize: '1rem', color: '#666' }}>
+              📚 Você ainda não comprou nenhum curso
+            </p>
+            <p style={{ color: '#999', marginTop: '10px', fontSize: '0.9rem' }}>
+              Explore os cursos disponíveis abaixo
+            </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '20px',
+          }}>
             {purchased.map((module) => renderModuleCard(module, true))}
           </div>
         )}
       </div>
 
+      {/* CURSOS DISPONÍVEIS */}
       <div>
-        <h2 style={{ color: '#1a1a2e', marginBottom: '15px' }}>🎯 Cursos Disponíveis ({mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length})</h2>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '15px',
+          flexWrap: 'wrap',
+          gap: '10px',
+        }}>
+          <h2 style={{ color: '#1a1a2e', margin: 0, fontSize: '1.3rem' }}>
+            🎯 Cursos Disponíveis ({mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length})
+          </h2>
+          {mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length > 0 && (
+            <div style={{ fontSize: '0.8rem', color: '#888' }}>
+              {totalAvailableModules} módulos • {totalAvailableLessons} aulas
+            </div>
+          )}
+        </div>
 
         {mainModules.filter((m: any) => !purchased.some((p: any) => p.id === m.id)).length === 0 ? (
-          <div style={{ background: 'white', padding: '40px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-            <p style={{ fontSize: '1.1rem', color: '#666' }}>🎉 Você já comprou todos os cursos disponíveis para este instrumento!</p>
-            <p style={{ color: '#999' }}>Selecione outro instrumento ou aguarde novos cursos</p>
+          <div style={{
+            background: 'white',
+            padding: '40px 20px',
+            borderRadius: '10px',
+            textAlign: 'center',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+          }}>
+            <p style={{ fontSize: '1rem', color: '#666' }}>
+              🎉 Você já comprou todos os cursos disponíveis para este instrumento!
+            </p>
+            <p style={{ color: '#999', marginTop: '10px', fontSize: '0.9rem' }}>
+              Selecione outro instrumento ou aguarde novos cursos
+            </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '20px',
+          }}>
             {mainModules
               .filter((m: any) => !purchased.some((p: any) => p.id === m.id))
               .map((module: any) => renderModuleCard(module, false))}
@@ -416,21 +654,70 @@ export default function StudentDashboard() {
         )}
       </div>
 
+      {/* Modal de Preview */}
       {showPreview && selectedModule && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 1000 }}>
-          <div style={{ background: 'white', padding: '30px', borderRadius: '10px', maxWidth: '800px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ color: '#1a1a2e', margin: 0 }}>🎬 Aula Grátis: {selectedModule.title}</h2>
-              <button onClick={closePreview} style={{ padding: '8px 16px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '1rem' }}>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '30px 20px',
+            borderRadius: '16px',
+            maxWidth: '90%',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+            }}>
+              <h2 style={{ color: '#1a1a2e', margin: 0, fontSize: '1.2rem' }}>
+                🎬 Aula Grátis: {selectedModule.title}
+              </h2>
+              <button
+                onClick={closePreview}
+                style={{
+                  padding: '8px 16px',
+                  background: '#e74c3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                }}
+              >
                 ✕ Fechar
               </button>
             </div>
 
-            <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', aspectRatio: '16/9', marginBottom: '20px' }}>
+            <div style={{
+              background: '#000',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              aspectRatio: '16/9',
+              marginBottom: '20px',
+            }}>
               {selectedModule.free_lesson_url && (
                 <iframe
                   src={getEmbedUrl(selectedModule.free_lesson_url) || selectedModule.free_lesson_url}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"
@@ -438,25 +725,58 @@ export default function StudentDashboard() {
               )}
             </div>
 
-            <p style={{ color: '#666' }}>{selectedModule.description}</p>
+            <p style={{ color: '#666', fontSize: '0.95rem' }}>{selectedModule.description}</p>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              marginTop: '20px',
+              paddingTop: '20px',
+              borderTop: '1px solid #eee',
+              flexWrap: 'wrap',
+            }}>
               <button
                 onClick={() => {
                   closePreview();
                   handlePurchase(selectedModule.id);
                 }}
-                style={{ flex: 1, padding: '12px', background: '#4a90e2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '1rem' }}
+                style={{
+                  flex: 1,
+                  minWidth: '150px',
+                  padding: '12px',
+                  background: '#4a90e2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem',
+                  fontWeight: 'bold',
+                }}
               >
-                🛒 Comprar Curso Completo - R$ {selectedPrice.toFixed(2)}
+                🛒 Comprar Curso - R$ {selectedPrice.toFixed(2)}
               </button>
-              <button onClick={closePreview} style={{ padding: '12px 24px', background: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                Continuar Explorando
+              <button
+                onClick={closePreview}
+                style={{
+                  padding: '12px 24px',
+                  background: '#666',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                Continuar
               </button>
             </div>
 
-            <p style={{ fontSize: '0.8rem', color: '#999', marginTop: '10px', textAlign: 'center' }}>
-              💡 Esta é uma aula gratuita para você conhecer o curso. Compre o curso completo para ter acesso a todas as aulas!
+            <p style={{
+              fontSize: '0.8rem',
+              color: '#999',
+              marginTop: '10px',
+              textAlign: 'center',
+            }}>
+              💡 Esta é uma aula gratuita para você conhecer o curso.
             </p>
           </div>
         </div>

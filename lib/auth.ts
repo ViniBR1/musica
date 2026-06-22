@@ -14,9 +14,8 @@ export async function verifyCredentials(
       [email]
     );
 
-    console.log('📊 Resultado da query:', result.length > 0 ? 'Usuário encontrado' : 'Usuário NÃO encontrado');
-
     if (result.length === 0) {
+      console.log('❌ Usuário não encontrado');
       return null;
     }
 
@@ -24,7 +23,8 @@ export async function verifyCredentials(
     console.log('👤 Usuário encontrado:', { 
       email: user.email, 
       role: user.role,
-      name: user.name 
+      name: user.name,
+      id: user.id
     });
     
     const isValid = await bcrypt.compare(password, user.password);
